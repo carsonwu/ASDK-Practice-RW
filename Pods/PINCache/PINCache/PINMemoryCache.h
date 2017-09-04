@@ -5,14 +5,16 @@
 #import <Foundation/Foundation.h>
 #import "Nullability.h"
 
+#import "PINCacheObjectSubscripting.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class PINMemoryCache;
+@class PINOperationQueue;
 
 /**
  A callback block which provides only the cache as an argument
  */
-
 typedef void (^PINMemoryCacheBlock)(PINMemoryCache *cache);
 
 /**
@@ -21,11 +23,17 @@ typedef void (^PINMemoryCacheBlock)(PINMemoryCache *cache);
 typedef void (^PINMemoryCacheObjectBlock)(PINMemoryCache *cache, NSString *key, id __nullable object);
 
 /**
+ A callback block which provides a BOOL value as argument
+ */
+typedef void (^PINMemoryCacheContainmentBlock)(BOOL containsObject);
+
+
+/**
  `PINMemoryCache` is a fast, thread safe key/value store similar to `NSCache`. On iOS it will clear itself
  automatically to reduce memory usage when the app receives a memory warning or goes into the background.
  
  Access is natively synchronous. Asynchronous variations are provided. Every asynchronous method accepts a
- callback block that runs on a concurrent <concurrentQueue>, with cache reads and writes protected by an semaphore.
+ callback block that runs on a concurrent <concurrentQueue>, with cache reads and writes protected by a lock.
  
  All access to the cache is dated so the that the least-used objects can be trimmed first. Setting an
  optional <ageLimit> will trigger a GCD timer to periodically to trim the cache to that age.
@@ -37,16 +45,10 @@ typedef void (^PINMemoryCacheObjectBlock)(PINMemoryCache *cache, NSString *key, 
  a memory cache backed by a disk cache.
  */
 
-@interface PINMemoryCache : NSObject
+@interface PINMemoryCache : NSObject <PINCacheObjectSubscripting>
 
 #pragma mark -
 /// @name Core
-
-/**
- A concurrent queue on which all callbacks are called. It is exposed here so that it can be set to
- target some other queue, such as a global concurrent queue with a priority other than the default.
- */
-@property (readonly) dispatch_queue_t concurrentQueue;
 
 /**
  The total accumulated cost.
@@ -154,8 +156,21 @@ typedef void (^PINMemoryCacheObjectBlock)(PINMemoryCache *cache, NSString *key, 
  */
 + (instancetype)sharedCache;
 
+- (instancetype)initWithOperationQueue:(PINOperationQueue *)operationQueue NS_DESIGNATED_INITIALIZER;
+
 #pragma mark -
 /// @name Asynchronous Methods
+
+/**
+ This method determines whether an object is present for the given key in the cache. This method returns immediately
+ and executes the passed block after the object is available, potentially in parallel with other blocks on the
+ <concurrentQueue>.
+ 
+ @see containsObjectForKey:
+ @param key The key associated with the object.
+ @param block A block to be executed concurrently after the containment check happened
+ */
+- (void)containsObjectForKey:(NSString *)key block:(PINMemoryCacheContainmentBlock)block;
 
 /**
  Retrieves the object for the specified key. This method returns immediately and executes the passed
@@ -247,6 +262,15 @@ typedef void (^PINMemoryCacheObjectBlock)(PINMemoryCache *cache, NSString *key, 
 
 #pragma mark -
 /// @name Synchronous Methods
+
+/**
+ This method determines whether an object is present for the given key in the cache.
+ 
+ @see containsObjectForKey:block:
+ @param key The key associated with the object.
+ @result YES if an object is present for the given key in the cache, otherwise NO.
+ */
+- (BOOL)containsObjectForKey:(NSString *)key;
 
 /**
  Retrieves the object for the specified key. This method blocks the calling thread until the

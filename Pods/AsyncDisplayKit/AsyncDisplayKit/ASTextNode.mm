@@ -12,12 +12,13 @@
 #import "ASTextNode+Beta.h"
 
 #include <mutex>
+#import <tgmath.h>
 
-#import <AsyncDisplayKit/_ASDisplayLayer.h>
-#import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
-#import <AsyncDisplayKit/ASDisplayNodeInternal.h>
-#import <AsyncDisplayKit/ASHighlightOverlayLayer.h>
-#import <AsyncDisplayKit/ASDisplayNodeExtras.h>
+#import "_ASDisplayLayer.h"
+#import "ASDisplayNode+Subclasses.h"
+#import "ASDisplayNodeInternal.h"
+#import "ASHighlightOverlayLayer.h"
+#import "ASDisplayNodeExtras.h"
 
 #import "ASTextKitCoreTextAdditions.h"
 #import "ASTextKitRenderer+Positioning.h"
@@ -26,41 +27,41 @@
 #import "ASInternalHelpers.h"
 #import "ASLayout.h"
 
+#import "CoreGraphics+ASConvenience.h"
+#import "ASObjectDescriptionHelpers.h"
+
+/**
+ * If set, we will record all values set to attributedText into an array
+ * and once we get 2000, we'll write them all out into a plist file.
+ *
+ * This is useful for gathering realistic text data sets from apps for performance
+ * testing.
+ */
+#define AS_TEXTNODE_RECORD_ATTRIBUTED_STRINGS 0
+
 static const NSTimeInterval ASTextNodeHighlightFadeOutDuration = 0.15;
 static const NSTimeInterval ASTextNodeHighlightFadeInDuration = 0.1;
 static const CGFloat ASTextNodeHighlightLightOpacity = 0.11;
 static const CGFloat ASTextNodeHighlightDarkOpacity = 0.22;
 static NSString *ASTextNodeTruncationTokenAttributeName = @"ASTextNodeTruncationAttribute";
 
-@interface ASTextNodeDrawParameters : NSObject
+struct ASTextNodeDrawParameter {
+  CGRect bounds;
+  UIColor *backgroundColor;
+};
 
-@property (nonatomic, assign, readonly) CGRect bounds;
-@property (nonatomic, strong, readonly) UIColor *backgroundColor;
-
-@end
-
-@implementation ASTextNodeDrawParameters
-
-- (instancetype)initWithBounds:(CGRect)bounds backgroundColor:(UIColor *)backgroundColor
-{
-  if (self = [super init]) {
-    _bounds = bounds;
-    _backgroundColor = backgroundColor;
-  }
-  return self;
-}
-
-@end
-
-@interface ASTextNode () <UIGestureRecognizerDelegate, NSLayoutManagerDelegate>
+@interface ASTextNode () <UIGestureRecognizerDelegate>
 
 @end
 
 @implementation ASTextNode {
   CGSize _shadowOffset;
   CGColorRef _shadowColor;
+  UIColor *_cachedShadowUIColor;
   CGFloat _shadowOpacity;
   CGFloat _shadowRadius;
+  
+  UIEdgeInsets _textContainerInset;
 
   NSArray *_exclusionPaths;
 
@@ -72,17 +73,27 @@ static NSString *ASTextNodeTruncationTokenAttributeName = @"ASTextNodeTruncation
   NSRange _highlightRange;
   ASHighlightOverlayLayer *_activeHighlightLayer;
 
-  std::recursive_mutex _textLock;
-
   CGSize _constrainedSize;
 
   ASTextKitRenderer *_renderer;
+
+  ASTextNodeDrawParameter _drawParameter;
 
   UILongPressGestureRecognizer *_longPressGestureRecognizer;
 }
 @dynamic placeholderEnabled;
 
 #pragma mark - NSObject
+
++ (void)initialize
+{
+  [super initialize];
+  
+  if (self != [ASTextNode class]) {
+    // Prevent custom drawing in subclasses
+    ASDisplayNodeAssert(!ASSubclassOverridesClassSelector([ASTextNode class], self, @selector(drawRect:withParameters:isCancelled:isRasterizing:)), @"Subclass %@ must not override drawRect:withParameters:isCancelled:isRasterizing: method. Custom drawing in %@ subclass is not supported.", NSStringFromClass(self), NSStringFromClass([ASTextNode class]));
+  }
+}
 
 static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
@@ -91,10 +102,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   if (self = [super init]) {
     // Load default values from superclass.
     _shadowOffset = [super shadowOffset];
-    CGColorRef superColor = [super shadowColor];
-    if (superColor != NULL) {
-      _shadowColor = CGColorRetain(superColor);
-    }
+    _shadowColor = CGColorRetain([super shadowColor]);
     _shadowOpacity = [super shadowOpacity];
     _shadowRadius = [super shadowRadius];
 
@@ -127,24 +135,10 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   return self;
 }
 
-- (instancetype)initWithLayerBlock:(ASDisplayNodeLayerBlock)viewBlock didLoadBlock:(ASDisplayNodeDidLoadBlock)didLoadBlock
-{
-  ASDisplayNodeAssertNotSupported();
-  return nil;
-}
-
-- (instancetype)initWithViewBlock:(ASDisplayNodeViewBlock)viewBlock didLoadBlock:(ASDisplayNodeDidLoadBlock)didLoadBlock
-{
-  ASDisplayNodeAssertNotSupported();
-  return nil;
-}
-
 - (void)dealloc
 {
-  if (_shadowColor != NULL) {
-    CGColorRelease(_shadowColor);
-  }
-  
+  CGColorRelease(_shadowColor);
+
   [self _invalidateRenderer];
 
   if (_longPressGestureRecognizer) {
@@ -154,15 +148,35 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   }
 }
 
-- (NSString *)description
+#pragma mark - Description
+
+- (NSString *)_plainStringForDescription
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
-  
-  NSString *plainString = [[_attributedText string] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-  NSString *truncationString = [_composedTruncationText string];
-  if (plainString.length > 50)
+  NSString *plainString = [[self.attributedText string] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+  if (plainString.length > 50) {
     plainString = [[plainString substringToIndex:50] stringByAppendingString:@"\u2026"];
-  return [NSString stringWithFormat:@"<%@: %p; text = \"%@\"; truncation string = \"%@\"; frame = %@; renderer = %p>", self.class, self, plainString, truncationString, self.nodeLoaded ? NSStringFromCGRect(self.layer.frame) : nil, _renderer];
+  }
+  return plainString;
+}
+
+- (NSMutableArray<NSDictionary *> *)propertiesForDescription
+{
+  NSMutableArray *result = [super propertiesForDescription];
+  NSString *plainString = [self _plainStringForDescription];
+  if (plainString.length > 0) {
+    [result insertObject:@{ @"text" : ASStringWithQuotesIfMultiword(plainString) } atIndex:0];
+  }
+  return result;
+}
+
+- (NSMutableArray<NSDictionary *> *)propertiesForDebugDescription
+{
+  NSMutableArray *result = [super propertiesForDebugDescription];
+  NSString *plainString = [self _plainStringForDescription];
+  if (plainString.length > 0) {
+    [result insertObject:@{ @"text" : ASStringWithQuotesIfMultiword(plainString) } atIndex:0];
+  }
+  return result;
 }
 
 #pragma mark - ASDisplayNode
@@ -225,10 +239,18 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
 - (ASTextKitRenderer *)_rendererWithBounds:(CGRect)bounds
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
 
   if (_renderer == nil) {
-    CGSize constrainedSize = _constrainedSize.width != -INFINITY ? _constrainedSize : bounds.size;
+    CGSize constrainedSize;
+    if (_constrainedSize.width != -INFINITY) {
+      constrainedSize = _constrainedSize;
+    } else {
+      constrainedSize = bounds.size;
+      constrainedSize.width -= (_textContainerInset.left + _textContainerInset.right);
+      constrainedSize.height -= (_textContainerInset.top + _textContainerInset.bottom);
+    }
+    
     _renderer = [[ASTextKitRenderer alloc] initWithTextKitAttributes:[self _rendererAttributes]
                                                      constrainedSize:constrainedSize];
   }
@@ -237,7 +259,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
 - (ASTextKitAttributes)_rendererAttributes
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return {
     .attributedString = _attributedText,
@@ -245,9 +267,12 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
     .lineBreakMode = _truncationMode,
     .maximumNumberOfLines = _maximumNumberOfLines,
     .exclusionPaths = _exclusionPaths,
-    .pointSizeScaleFactors = _pointSizeScaleFactors,
-    .layoutManagerCreationBlock = self.layoutManagerCreationBlock,
-    .textStorageCreationBlock = self.textStorageCreationBlock,
+    // use the property getter so a subclass can provide these scale factors on demand if desired
+    .pointSizeScaleFactors = self.pointSizeScaleFactors,
+    .shadowOffset = _shadowOffset,
+    .shadowColor = _cachedShadowUIColor,
+    .shadowOpacity = _shadowOpacity,
+    .shadowRadius = _shadowRadius
   };
 }
 
@@ -263,7 +288,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
     // so our previous layout information is invalid, and TextKit may draw at the
     // incorrect origin.
     {
-      std::lock_guard<std::recursive_mutex> l(_textLock);
+      ASDN::MutexLocker l(__instanceLock__);
       _constrainedSize = CGSizeMake(-INFINITY, -INFINITY);
     }
     [self _invalidateRenderer];
@@ -272,26 +297,40 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
 - (void)_invalidateRenderer
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_renderer) {
     // Destruction of the layout managers/containers/text storage is quite
     // expensive, and can take some time, so we dispatch onto a bg queue to
-    // actually dealloc.
-    __block ASTextKitRenderer *renderer = _renderer;
-    
-    ASPerformBlockOnDeallocationQueue(^{
-      renderer = nil;
-    });
+    // actually dealloc.    
+    ASPerformBackgroundDeallocation(_renderer);
     _renderer = nil;
   }
 }
 
 #pragma mark - Layout and Sizing
 
+- (void)setTextContainerInset:(UIEdgeInsets)textContainerInset
+{
+  ASDN::MutexLocker l(__instanceLock__);
+  
+  BOOL needsUpdate = !UIEdgeInsetsEqualToEdgeInsets(textContainerInset, _textContainerInset);
+  if (needsUpdate) {
+    _textContainerInset = textContainerInset;
+    [self invalidateCalculatedLayout];
+    [self setNeedsLayout];
+  }
+}
+
+- (UIEdgeInsets)textContainerInset
+{
+  ASDN::MutexLocker l(__instanceLock__);
+  return _textContainerInset;
+}
+
 - (BOOL)_needInvalidateRendererForBoundsSize:(CGSize)boundsSize
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_renderer == nil) {
     return YES;
@@ -300,6 +339,10 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   // If the size is not the same as the constraint we provided to the renderer, start out assuming we need
   // a new one.  However, there are common cases where the constrained size doesn't need to be the same as calculated.
   CGSize rendererConstrainedSize = _renderer.constrainedSize;
+  
+  //inset bounds
+  boundsSize.width -= _textContainerInset.left + _textContainerInset.right;
+  boundsSize.height -= _textContainerInset.top + _textContainerInset.bottom;
   
   if (CGSizeEqualToSize(boundsSize, rendererConstrainedSize)) {
     return NO;
@@ -311,12 +354,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
     // as this would essentially serve to set its constrainedSize to be its calculatedSize (unnecessary).
     ASLayout *layout = self.calculatedLayout;
     if (layout != nil && CGSizeEqualToSize(boundsSize, layout.size)) {
-      if (boundsSize.width != rendererConstrainedSize.width) {
-        // Don't bother changing _constrainedSize, as ASDisplayNode's -measure: method would have a cache miss
-        // and ask us to recalculate layout if it were called with the same calculatedSize that got us to this point!
-        _renderer.constrainedSize = boundsSize;
-      }
-      return NO;
+      return (boundsSize.width != rendererConstrainedSize.width);
     } else {
       return YES;
     }
@@ -329,88 +367,129 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   
   ASLayout *layout = self.calculatedLayout;
   
-  std::lock_guard<std::recursive_mutex> l(_textLock);
   if (layout != nil) {
-    _constrainedSize = layout.size;
-    _renderer.constrainedSize = layout.size;
+    ASDN::MutexLocker l(__instanceLock__);
+    CGSize layoutSize = layout.size;
+    
+    // Apply textContainerInset
+    layoutSize.width -= (_textContainerInset.left + _textContainerInset.right);
+    layoutSize.height -= (_textContainerInset.top + _textContainerInset.bottom);
+    
+    if (CGSizeEqualToSize(_constrainedSize, layoutSize) == NO) {
+      _constrainedSize = layoutSize;
+      [self _invalidateRenderer];
+    }
   }
 }
 
 - (CGSize)calculateSizeThatFits:(CGSize)constrainedSize
 {
+  ASDN::MutexLocker l(__instanceLock__);
+  
   ASDisplayNodeAssert(constrainedSize.width >= 0, @"Constrained width for text (%f) is too  narrow", constrainedSize.width);
   ASDisplayNodeAssert(constrainedSize.height >= 0, @"Constrained height for text (%f) is too short", constrainedSize.height);
   
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  // Cache the original constrained size for final size calculateion
+  CGSize originalConstrainedSize = constrainedSize;
+  
+  // Adjust constrainedSize for textContainerInset before assigning it
+  constrainedSize.width -= (_textContainerInset.left + _textContainerInset.right);
+  constrainedSize.height -= (_textContainerInset.top + _textContainerInset.bottom);
   
   _constrainedSize = constrainedSize;
   
-  // Instead of invalidating the renderer, in case this is a new call with a different constrained size,
-  // just update the size of the NSTextContainer that is owned by the renderer's internal context object.
-  [self _renderer].constrainedSize = _constrainedSize;
+  if (_renderer != nil && CGSizeEqualToSize(constrainedSize, _renderer.constrainedSize) == NO) {
+    [self _invalidateRenderer];
+  }
 
   [self setNeedsDisplay];
   
   CGSize size = [self _renderer].size;
   if (_attributedText.length > 0) {
-    CGFloat screenScale = ASScreenScale();
-    self.ascender = round([[_attributedText attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL] ascender] * screenScale)/screenScale;
-    self.descender = round([[_attributedText attribute:NSFontAttributeName atIndex:_attributedText.length - 1 effectiveRange:NULL] descender] * screenScale)/screenScale;
+    self.style.ascender = [[self class] ascenderWithAttributedString:_attributedText];
+    self.style.descender = [[_attributedText attribute:NSFontAttributeName atIndex:_attributedText.length - 1 effectiveRange:NULL] descender];
     if (_renderer.currentScaleFactor > 0 && _renderer.currentScaleFactor < 1.0) {
       // while not perfect, this is a good estimate of what the ascender of the scaled font will be.
-      self.ascender *= _renderer.currentScaleFactor;
-      self.descender *= _renderer.currentScaleFactor;
+      self.style.ascender *= _renderer.currentScaleFactor;
+      self.style.descender *= _renderer.currentScaleFactor;
     }
   }
-  return size;
+  
+  // Add the constrained size back textContainerInset
+  size.width += (_textContainerInset.left + _textContainerInset.right);
+  size.height += (_textContainerInset.top + _textContainerInset.bottom);
+  
+  return CGSizeMake(std::fmin(size.width, originalConstrainedSize.width),
+                    std::fmin(size.height, originalConstrainedSize.height));
 }
 
 #pragma mark - Modifying User Text
 
+// Returns the ascender of the first character in attributedString by also including the line height if specified in paragraph style.
++ (CGFloat)ascenderWithAttributedString:(NSAttributedString *)attributedString 
+{
+  UIFont *font = [attributedString attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL];
+  NSParagraphStyle *paragraphStyle = [attributedString attribute:NSParagraphStyleAttributeName atIndex:0 effectiveRange:NULL];
+  if (!paragraphStyle) {
+    return font.ascender;
+  }
+  CGFloat lineHeight = MAX(font.lineHeight, paragraphStyle.minimumLineHeight);
+  if (paragraphStyle.maximumLineHeight > 0) {
+    lineHeight = MIN(lineHeight, paragraphStyle.maximumLineHeight);
+  }
+  return lineHeight + font.descender;
+}
+
 - (void)setAttributedText:(NSAttributedString *)attributedText
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
   
   if (attributedText == nil) {
     attributedText = [[NSAttributedString alloc] initWithString:@"" attributes:nil];
   }
-
-  if (ASObjectIsEqual(attributedText, _attributedText)) {
-    return;
-  }
-
-  _attributedText = ASCleanseAttributedStringOfCoreTextAttributes(attributedText);
-    
-  if (_attributedText.length > 0) {
-    CGFloat screenScale = ASScreenScale();
-    self.ascender = round([[_attributedText attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL] ascender] * screenScale)/screenScale;
-    self.descender = round([[_attributedText attribute:NSFontAttributeName atIndex:_attributedText.length - 1 effectiveRange:NULL] descender] * screenScale)/screenScale;
-  }
-
-  // Sync the truncation string with attributes from the updated _attributedString
-  // Without this, the size calculation of the text with truncation applied will
-  // not take into account the attributes of attributedText in the last line
-  [self _updateComposedTruncationText];
   
-  // We need an entirely new renderer
-  [self _invalidateRenderer];
+  // Don't hold textLock for too long.
+  {
+    ASDN::MutexLocker l(__instanceLock__);
+    if (ASObjectIsEqual(attributedText, _attributedText)) {
+      return;
+    }
+
+    _attributedText = ASCleanseAttributedStringOfCoreTextAttributes(attributedText);
+#if AS_TEXTNODE_RECORD_ATTRIBUTED_STRINGS
+	  [ASTextNode _registerAttributedText:_attributedText];
+#endif
+    // Sync the truncation string with attributes from the updated _attributedString
+    // Without this, the size calculation of the text with truncation applied will
+    // not take into account the attributes of attributedText in the last line
+    [self _updateComposedTruncationText];
+    
+    // We need an entirely new renderer
+    [self _invalidateRenderer];
+  }
+  
+  NSUInteger length = attributedText.length;
+  if (length > 0) {
+    self.style.ascender = [[self class] ascenderWithAttributedString:attributedText];
+    self.style.descender = [[attributedText attribute:NSFontAttributeName atIndex:attributedText.length - 1 effectiveRange:NULL] descender];
+  }
 
   // Tell the display node superclasses that the cached layout is incorrect now
   [self invalidateCalculatedLayout];
 
+  // Force display to create renderer with new size and redisplay with new string
   [self setNeedsDisplay];
   
   
   // Accessiblity
-  self.accessibilityLabel = _attributedText.string;
-  self.isAccessibilityElement = (_attributedText.length != 0); // We're an accessibility element by default if there is a string.
+  self.accessibilityLabel = attributedText.string;
+  self.isAccessibilityElement = (length != 0); // We're an accessibility element by default if there is a string.
 }
 
 #pragma mark - Text Layout
 
 - (void)setExclusionPaths:(NSArray *)exclusionPaths
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (ASObjectIsEqual(exclusionPaths, _exclusionPaths)) {
     return;
@@ -424,49 +503,52 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
 - (NSArray *)exclusionPaths
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _exclusionPaths;
 }
 
 #pragma mark - Drawing
 
-- (void)drawRect:(CGRect)bounds withParameters:(ASTextNodeDrawParameters *)parameters isCancelled:(asdisplaynode_iscancelled_block_t)isCancelledBlock isRasterizing:(BOOL)isRasterizing
+- (NSObject *)drawParametersForAsyncLayer:(_ASDisplayLayer *)layer
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
+  
+  _drawParameter = {
+    .backgroundColor = self.backgroundColor,
+    .bounds = self.bounds
+  };
+  return nil;
+}
+
+
+- (void)drawRect:(CGRect)bounds withParameters:(id <NSObject>)p isCancelled:(asdisplaynode_iscancelled_block_t)isCancelledBlock isRasterizing:(BOOL)isRasterizing;
+{
+  ASDN::MutexLocker l(__instanceLock__);
+
+  ASTextNodeDrawParameter drawParameter = _drawParameter;
+  CGRect drawParameterBounds = drawParameter.bounds;
+  UIColor *backgroundColor = isRasterizing ? nil : drawParameter.backgroundColor;
   
   CGContextRef context = UIGraphicsGetCurrentContext();
   ASDisplayNodeAssert(context, @"This is no good without a context.");
   
   CGContextSaveGState(context);
   
-  ASTextKitRenderer *renderer = [self _rendererWithBounds:parameters.bounds];
-  UIEdgeInsets shadowPadding = [self shadowPaddingWithRenderer:renderer];
-  CGPoint boundsOrigin = parameters.bounds.origin;
-  CGPoint textOrigin = CGPointMake(boundsOrigin.x - shadowPadding.left, boundsOrigin.y - shadowPadding.top);
+  CGContextTranslateCTM(context, _textContainerInset.left, _textContainerInset.top);
+  
+  ASTextKitRenderer *renderer = [self _rendererWithBounds:drawParameterBounds];
   
   // Fill background
-  if (!isRasterizing) {
-    UIColor *backgroundColor = parameters.backgroundColor;
-    if (backgroundColor) {
-      [backgroundColor setFill];
-      UIRectFillUsingBlendMode(CGContextGetClipBoundingBox(context), kCGBlendModeCopy);
-    }
+  if (backgroundColor != nil) {
+    [backgroundColor setFill];
+    UIRectFillUsingBlendMode(CGContextGetClipBoundingBox(context), kCGBlendModeCopy);
   }
   
-  // Draw shadow
-  [renderer.shadower setShadowInContext:context];
-  
   // Draw text
-  bounds.origin = textOrigin;
-  [renderer drawInContext:context bounds:bounds];
+  [renderer drawInContext:context bounds:drawParameterBounds];
   
   CGContextRestoreGState(context);
-}
-
-- (NSObject *)drawParametersForAsyncLayer:(_ASDisplayLayer *)layer
-{
-  return [[ASTextNodeDrawParameters alloc] initWithBounds:self.threadSafeBounds backgroundColor:self.backgroundColor];
 }
 
 #pragma mark - Attributes
@@ -490,7 +572,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 {
   ASDisplayNodeAssertMainThread();
   
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   ASTextKitRenderer *renderer = [self _renderer];
   NSRange visibleRange = renderer.firstVisibleRange;
@@ -507,7 +589,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
   [renderer enumerateTextIndexesAtPosition:point usingBlock:^(NSUInteger characterIndex, CGRect glyphBoundingRect, BOOL *stop) {
     CGPoint glyphLocation = CGPointMake(CGRectGetMidX(glyphBoundingRect), CGRectGetMidY(glyphBoundingRect));
-    CGFloat currentDistance = sqrtf(powf(point.x - glyphLocation.x, 2.f) + powf(point.y - glyphLocation.y, 2.f));
+    CGFloat currentDistance = std::sqrt(std::pow(point.x - glyphLocation.x, 2.f) + std::pow(point.y - glyphLocation.y, 2.f));
     if (currentDistance >= minimumGlyphDistance) {
       // If the distance computed from the touch to the glyph location is
       // not the minimum among the located link attributes, we can just skip
@@ -617,14 +699,14 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
 
 - (ASTextNodeHighlightStyle)highlightStyle
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _highlightStyle;
 }
 
 - (void)setHighlightStyle:(ASTextNodeHighlightStyle)highlightStyle
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   _highlightStyle = highlightStyle;
 }
@@ -708,11 +790,20 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
       }
 
       if (highlightTargetLayer != nil) {
+        ASDN::MutexLocker l(__instanceLock__);
+
         NSArray *highlightRects = [[self _renderer] rectsForTextRange:highlightRange measureOption:ASTextKitRendererMeasureOptionBlock];
         NSMutableArray *converted = [NSMutableArray arrayWithCapacity:highlightRects.count];
         for (NSValue *rectValue in highlightRects) {
           UIEdgeInsets shadowPadding = _renderer.shadower.shadowPadding;
           CGRect rendererRect = ASTextNodeAdjustRenderRectForShadowPadding(rectValue.CGRectValue, shadowPadding);
+
+          // The rects returned from renderer don't have `textContainerInset`,
+          // as well as they are using the `constrainedSize` for layout,
+          // so we can simply increase the rect by insets to get the full blown layout.
+          rendererRect.size.width += _textContainerInset.left + _textContainerInset.right;
+          rendererRect.size.height += _textContainerInset.top + _textContainerInset.bottom;
+
           CGRect highlightedRect = [self.layer convertRect:rendererRect toLayer:highlightTargetLayer];
 
           // We set our overlay layer's frame to the bounds of the highlight target layer.
@@ -786,7 +877,7 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (NSArray *)_rectsForTextRange:(NSRange)textRange measureOption:(ASTextKitRendererMeasureOption)measureOption
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   NSArray *rects = [[self _renderer] rectsForTextRange:textRange measureOption:measureOption];
   NSMutableArray *adjustedRects = [NSMutableArray array];
@@ -804,7 +895,7 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGRect)trailingRect
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   CGRect rect = [[self _renderer] trailingRect];
   return ASTextNodeAdjustRenderRectForShadowPadding(rect, self.shadowPadding);
@@ -812,7 +903,7 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGRect)frameForTextRange:(NSRange)textRange
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   CGRect frame = [[self _renderer] frameForTextRange:textRange];
   return ASTextNodeAdjustRenderRectForShadowPadding(frame, self.shadowPadding);
@@ -822,7 +913,7 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (void)setPlaceholderColor:(UIColor *)placeholderColor
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   _placeholderColor = placeholderColor;
 
@@ -835,11 +926,11 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
   // FIXME: Replace this implementation with reusable CALayers that have .backgroundColor set.
   // This would completely eliminate the memory and performance cost of the backing store.
   CGSize size = self.calculatedSize;
-  if (CGSizeEqualToSize(size, CGSizeZero)) {
+  if ((size.width * size.height) < CGFLOAT_EPSILON) {
     return nil;
   }
   
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   UIGraphicsBeginImageContext(size);
   [self.placeholderColor setFill];
@@ -901,8 +992,6 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 {
   ASDisplayNodeAssertMainThread();
   
-  std::lock_guard<std::recursive_mutex> l(_textLock);
-  
   [super touchesBegan:touches withEvent:event];
 
   CGPoint point = [[touches anyObject] locationInView:self.view];
@@ -921,7 +1010,11 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
   BOOL linkCrossesVisibleRange = (lastCharIndex > range.location) && (lastCharIndex < NSMaxRange(range) - 1);
 
   if (inAdditionalTruncationMessage) {
-    NSRange visibleRange = [self _renderer].firstVisibleRange;
+    NSRange visibleRange = NSMakeRange(0, 0);
+    {
+      ASDN::MutexLocker l(__instanceLock__);
+      visibleRange = [self _renderer].firstVisibleRange;
+    }
     NSRange truncationMessageRange = [self _additionalTruncationMessageRangeWithVisibleRange:visibleRange];
     [self _setHighlightRange:truncationMessageRange forAttributeName:ASTextNodeTruncationTokenAttributeName value:nil animated:YES];
   } else if (range.length && !linkCrossesVisibleRange && linkAttributeValue != nil && linkAttributeName != nil) {
@@ -998,14 +1091,14 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (BOOL)_pendingLinkTap
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return (_highlightedLinkAttributeValue != nil && ![self _pendingTruncationTap]) && _delegate != nil;
 }
 
 - (BOOL)_pendingTruncationTap
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return [_highlightedLinkAttributeName isEqualToString:ASTextNodeTruncationTokenAttributeName];
 }
@@ -1014,20 +1107,19 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGColorRef)shadowColor
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _shadowColor;
 }
 
 - (void)setShadowColor:(CGColorRef)shadowColor
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
-  if (_shadowColor != shadowColor) {
-    if (shadowColor != NULL) {
-      CGColorRetain(shadowColor);
-    }
-    _shadowColor = shadowColor;
+  if (_shadowColor != shadowColor && CGColorEqualToColor(shadowColor, _shadowColor) == NO) {
+    CGColorRelease(_shadowColor);
+    _shadowColor = CGColorRetain(shadowColor);
+    _cachedShadowUIColor = [UIColor colorWithCGColor:shadowColor];
     [self _invalidateRenderer];
     [self setNeedsDisplay];
   }
@@ -1035,14 +1127,14 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGSize)shadowOffset
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _shadowOffset;
 }
 
 - (void)setShadowOffset:(CGSize)shadowOffset
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (!CGSizeEqualToSize(_shadowOffset, shadowOffset)) {
     _shadowOffset = shadowOffset;
@@ -1053,14 +1145,14 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGFloat)shadowOpacity
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _shadowOpacity;
 }
 
 - (void)setShadowOpacity:(CGFloat)shadowOpacity
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_shadowOpacity != shadowOpacity) {
     _shadowOpacity = shadowOpacity;
@@ -1071,14 +1163,14 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (CGFloat)shadowRadius
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return _shadowRadius;
 }
 
 - (void)setShadowRadius:(CGFloat)shadowRadius
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_shadowRadius != shadowRadius) {
     _shadowRadius = shadowRadius;
@@ -1094,7 +1186,7 @@ static CGRect ASTextNodeAdjustRenderRectForShadowPadding(CGRect rendererRect, UI
 
 - (UIEdgeInsets)shadowPaddingWithRenderer:(ASTextKitRenderer *)renderer
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return renderer.shadower.shadowPadding;
 }
@@ -1113,7 +1205,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)setTruncationAttributedText:(NSAttributedString *)truncationAttributedText
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (ASObjectIsEqual(_truncationAttributedText, truncationAttributedText)) {
     return;
@@ -1125,7 +1217,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)setAdditionalTruncationMessage:(NSAttributedString *)additionalTruncationMessage
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (ASObjectIsEqual(_additionalTruncationMessage, additionalTruncationMessage)) {
     return;
@@ -1137,7 +1229,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)setTruncationMode:(NSLineBreakMode)truncationMode
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_truncationMode != truncationMode) {
     _truncationMode = truncationMode;
@@ -1148,7 +1240,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (BOOL)isTruncated
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   ASTextKitRenderer *renderer = [self _renderer];
   return renderer.firstVisibleRange.length < _attributedText.length;
@@ -1156,7 +1248,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)setPointSizeScaleFactors:(NSArray *)pointSizeScaleFactors
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if ([_pointSizeScaleFactors isEqualToArray:pointSizeScaleFactors] == NO) {
     _pointSizeScaleFactors = pointSizeScaleFactors;
@@ -1166,7 +1258,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)setMaximumNumberOfLines:(NSUInteger)maximumNumberOfLines
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   if (_maximumNumberOfLines != maximumNumberOfLines) {
     _maximumNumberOfLines = maximumNumberOfLines;
@@ -1177,7 +1269,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (NSUInteger)lineCount
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   return [[self _renderer] lineCount];
 }
@@ -1186,7 +1278,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
 
 - (void)_updateComposedTruncationText
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   _composedTruncationText = [self _prepareTruncationStringForDrawing:[self _composedTruncationText]];
 }
@@ -1204,7 +1296,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
  */
 - (NSRange)_additionalTruncationMessageRangeWithVisibleRange:(NSRange)visibleRange
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   // Check if we even have an additional truncation message.
   if (!_additionalTruncationMessage) {
@@ -1227,7 +1319,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
  */
 - (NSAttributedString *)_composedTruncationText
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   //If we have neither return the default
   if (!_additionalTruncationMessage && !_truncationAttributedText) {
@@ -1242,7 +1334,7 @@ static NSAttributedString *DefaultTruncationAttributedString()
   }
 
   // If we've reached this point, both _additionalTruncationMessage and
-  // _truncationAttributedString are present.  Compose them.
+  // _truncationAttributedText are present.  Compose them.
 
   NSMutableAttributedString *newComposedTruncationString = [[NSMutableAttributedString alloc] initWithAttributedString:_truncationAttributedText];
   [newComposedTruncationString replaceCharactersInRange:NSMakeRange(newComposedTruncationString.length, 0) withString:@" "];
@@ -1257,14 +1349,14 @@ static NSAttributedString *DefaultTruncationAttributedString()
  */
 - (NSAttributedString *)_prepareTruncationStringForDrawing:(NSAttributedString *)truncationString
 {
-  std::lock_guard<std::recursive_mutex> l(_textLock);
+  ASDN::MutexLocker l(__instanceLock__);
   
   truncationString = ASCleanseAttributedStringOfCoreTextAttributes(truncationString);
   NSMutableAttributedString *truncationMutableString = [truncationString mutableCopy];
   // Grab the attributes from the full string
   if (_attributedText.length > 0) {
-    NSAttributedString *originalString = _truncationAttributedText;
-    NSInteger originalStringLength = _truncationAttributedText.length;
+    NSAttributedString *originalString = _attributedText;
+    NSInteger originalStringLength = _attributedText.length;
     // Add any of the original string's attributes to the truncation string,
     // but don't overwrite any of the truncation string's attributes
     NSDictionary *originalStringAttributes = [originalString attributesAtIndex:originalStringLength-1 effectiveRange:NULL];
@@ -1277,6 +1369,30 @@ static NSAttributedString *DefaultTruncationAttributedString()
   }
   return truncationMutableString;
 }
+
+#if AS_TEXTNODE_RECORD_ATTRIBUTED_STRINGS
++ (void)_registerAttributedText:(NSAttributedString *)str
+{
+  static NSMutableArray *array;
+  static NSLock *lock;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    lock = [NSLock new];
+    array = [NSMutableArray new];
+  });
+  [lock lock];
+  [array addObject:str];
+  if (array.count % 20 == 0) {
+    NSLog(@"Got %d strings", (int)array.count);
+  }
+  if (array.count == 2000) {
+    NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:@"AttributedStrings.plist"];
+    NSAssert([NSKeyedArchiver archiveRootObject:array toFile:path], nil);
+    NSLog(@"Saved to %@", path);
+  }
+  [lock unlock];
+}
+#endif
 
 @end
 

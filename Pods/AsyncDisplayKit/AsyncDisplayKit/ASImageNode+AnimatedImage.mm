@@ -13,11 +13,9 @@
 #import "ASImageNode.h"
 
 #import "ASAssert.h"
-#import "ASImageProtocols.h"
 #import "ASDisplayNode+Subclasses.h"
 #import "ASDisplayNodeExtras.h"
 #import "ASEqualityHelpers.h"
-#import "ASDisplayNode+FrameworkPrivate.h"
 #import "ASImageNode+AnimatedImagePrivate.h"
 #import "ASInternalHelpers.h"
 #import "ASWeakProxy.h"
@@ -166,19 +164,23 @@ NSString *const ASAnimatedImageDefaultRunLoopMode = NSRunLoopCommonModes;
   [self.animatedImage clearAnimatedImageCache];
 }
 
-- (void)visibleStateDidChange:(BOOL)isVisible
+- (void)didEnterVisibleState
 {
-  [super visibleStateDidChange:isVisible];
-  
   ASDisplayNodeAssertMainThread();
-  if (isVisible) {
-    if (self.animatedImage.coverImageReady) {
-      self.image = self.animatedImage.coverImage;
-    }
-    [self startAnimating];
-  } else {
-    [self stopAnimating];
+  [super didEnterVisibleState];
+  
+  if (self.animatedImage.coverImageReady) {
+    self.image = self.animatedImage.coverImage;
   }
+  [self startAnimating];
+}
+
+- (void)didExitVisibleState
+{
+  ASDisplayNodeAssertMainThread();
+  [super didExitVisibleState];
+  
+  [self stopAnimating];
 }
 
 - (void)displayLinkFired:(CADisplayLink *)displayLink
@@ -233,7 +235,11 @@ NSString *const ASAnimatedImageDefaultRunLoopMode = NSRunLoopCommonModes;
   return frameIndex;
 }
 
-- (void)dealloc
+@end
+
+@implementation ASImageNode(AnimatedImageInvalidation)
+
+- (void)invalidateAnimatedImage
 {
   ASDN::MutexLocker l(_displayLinkLock);
 #if ASAnimatedImageDebug

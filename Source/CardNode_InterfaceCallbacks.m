@@ -26,37 +26,34 @@
 
 #pragma mark - Interface Callbacks
 
-//- (void)visibleStateDidChange:(BOOL)isVisible {
-//  [super visibleStateDidChange:isVisible];
-//  if (!self.name) { return; }
-//
-//  if (isVisible) {
-//    NSLog(@"%@ is visible!", self.name);
-//  } else {
-//    NSLog(@"%@ left the screen", self.name);
-//  }
+//- (void)didEnterVisibleState {
+//  [super didEnterVisibleState];
+//  NSLog(@"%@ is visible!", self.debugName);
 //}
-
-//- (void)loadStateDidChange:(BOOL)inLoadState {
-//  [super loadStateDidChange:inLoadState];
-//  if (!self.name) { return; }
 //
-//  if (inLoadState) {
-//    NSLog(@"%@ is loading data!", self.name);
-//  } else {
-//    NSLog(@"%@ has left the data loading range.", self.name);
-//  }
+//- (void)didExitVisibleState {
+//  [super didExitVisibleState];
+//  NSLog(@"%@ left the screen", self.debugName);
 //}
-
-//- (void)displayStateDidChange:(BOOL)inDisplayState {
-//  [super displayStateDidChange:inDisplayState];
-//  if (!self.name) { return; }
 //
-//  if (inDisplayState) {
-//    NSLog(@"%@ has started rendering!", self.name);
-//  } else {
-//    NSLog(@"%@ has left the view display state.", self.name);
-//  }
+//- (void)didEnterDisplayState {
+//  [super didEnterDisplayState];
+//  NSLog(@"%@ has started rendering!", self.debugName);
+//}
+//
+//- (void)didExitDisplayState {
+//  [super didExitDisplayState];
+//  NSLog(@"%@ has left the view display state.", self.debugName);
+//}
+//
+//- (void)didEnterPreloadState {
+//  [super didEnterPreloadState];
+//  NSLog(@"%@ is loading data!", self.debugName);
+//}
+//
+//- (void)didExitPreloadState {
+//  [super didExitPreloadState];
+//  NSLog(@"%@ has left the data loading range.", self.debugName);
 //}
 
 @end

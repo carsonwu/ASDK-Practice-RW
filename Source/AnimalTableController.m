@@ -22,8 +22,9 @@
 
 #import "AnimalTableController.h"
 #import "RainforestCardInfo.h"
-#import "CardNode.h"
+//#import "CardNode.h"
 #import "CardCell.h"
+#import <AsyncDisplayKit/AsyncDisplayKit.h>
 
 static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
@@ -40,9 +41,8 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
 @interface AnimalTableController (Helpers)
 - (void)retrieveNextPageWithCompletion:(void (^)(NSArray *))block;
-- (void)insertNewRowsInTableView:(NSArray *)newAnimals;
+- (void)insertNewRowsInTableNode:(NSArray *)newAnimals;
 @end
-
 
 @implementation AnimalTableController
 
@@ -52,7 +52,7 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
   _animals = animals.mutableCopy;
   if (!(self = [super init])) { return nil; }
-
+    ASTableNode
   return self;
 }
 
@@ -121,30 +121,29 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
 @end
 
-
 @implementation AnimalTableController (Helpers)
 
 - (void)retrieveNextPageWithCompletion:(void (^)(NSArray *))block {
 //  NSArray *moreAnimals = [[NSArray alloc] initWithArray:[self.animals subarrayWithRange:NSMakeRange(0, 5)] copyItems:NO];
-//
+//  
 //  // Important: this block must run on the main thread
 //  dispatch_async(dispatch_get_main_queue(), ^{
 //    block(moreAnimals);
 //  });
 }
 
-- (void)insertNewRowsInTableView:(NSArray *)newAnimals {
+- (void)insertNewRowsInTableNode:(NSArray *)newAnimals {
 //  NSInteger section = 0;
 //  NSMutableArray *indexPaths = [NSMutableArray array];
-//
+//  
 //  NSUInteger newTotalNumberOfPhotos = self.animals.count + newAnimals.count;
 //  for (NSUInteger row = self.animals.count; row < newTotalNumberOfPhotos; row++) {
 //    NSIndexPath *path = [NSIndexPath indexPathForRow:row inSection:section];
 //    [indexPaths addObject:path];
 //  }
-//
+//  
 //  [self.animals addObjectsFromArray:newAnimals];
-//  [self.tableNode.view insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationNone];
+//  [self.tableNode insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationNone];
 }
 
 @end

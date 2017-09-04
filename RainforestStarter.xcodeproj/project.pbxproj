@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		91F8487F51508425FCE7F8C0 /* libPods-RainForestFinal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 63AFCB603422C3729A0BEAF1 /* libPods-RainForestFinal.a */; };
+		13A210D61D5A4363BAE7ED3F /* libPods-RainForestStarter.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 868B159D652C0E04F8059D12 /* libPods-RainForestStarter.a */; };
 		9F7D350F1D537A8100E73C90 /* CardNode_InterfaceCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F7D350D1D537A8100E73C90 /* CardNode_InterfaceCallbacks.m */; };
 		9FF736E51D5376DA009B70D9 /* AnimalTableController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FF736D31D5376DA009B70D9 /* AnimalTableController.m */; };
 		9FF736E61D5376DA009B70D9 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FF736D51D5376DA009B70D9 /* AppDelegate.m */; };
@@ -20,12 +20,11 @@
 		9FF736ED1D5376DA009B70D9 /* UIImage+ImageEffects.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FF736E21D5376DA009B70D9 /* UIImage+ImageEffects.m */; };
 		9FF736EE1D5376DA009B70D9 /* AnimalPagerController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FF736E41D5376DA009B70D9 /* AnimalPagerController.m */; };
 		9FF736F11D5376E3009B70D9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9FF736F01D5376E3009B70D9 /* Assets.xcassets */; };
+		AECCF9931E1459CE003C07F8 /* ASImageNode+Placeholder.m in Sources */ = {isa = PBXBuildFile; fileRef = AECCF9921E1459CE003C07F8 /* ASImageNode+Placeholder.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		4E68A3A3C420DC6B19D02192 /* Pods-RainForestFinal.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RainForestFinal.release.xcconfig"; path = "Pods/Target Support Files/Pods-RainForestFinal/Pods-RainForestFinal.release.xcconfig"; sourceTree = "<group>"; };
-		63AFCB603422C3729A0BEAF1 /* libPods-RainForestFinal.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RainForestFinal.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		79C731D5DCD29A2373C5D3A3 /* Pods-RainForestFinal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RainForestFinal.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RainForestFinal/Pods-RainForestFinal.debug.xcconfig"; sourceTree = "<group>"; };
+		868B159D652C0E04F8059D12 /* libPods-RainForestStarter.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RainForestStarter.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F7D350D1D537A8100E73C90 /* CardNode_InterfaceCallbacks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CardNode_InterfaceCallbacks.m; path = Source/CardNode_InterfaceCallbacks.m; sourceTree = "<group>"; };
 		9F7D350E1D537A8100E73C90 /* CardNode_InterfaceCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CardNode_InterfaceCallbacks.h; path = Source/CardNode_InterfaceCallbacks.h; sourceTree = "<group>"; };
 		9FF736D21D5376DA009B70D9 /* AnimalTableController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AnimalTableController.h; path = Source/AnimalTableController.h; sourceTree = "<group>"; };
@@ -50,6 +49,10 @@
 		9FF736F01D5376E3009B70D9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9FF736F41D53770B009B70D9 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AE2FB48A1C821D0C003AD243 /* RainforestStarter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RainforestStarter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AECCF9911E1459CE003C07F8 /* ASImageNode+Placeholder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ASImageNode+Placeholder.h"; sourceTree = "<group>"; };
+		AECCF9921E1459CE003C07F8 /* ASImageNode+Placeholder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "ASImageNode+Placeholder.m"; sourceTree = "<group>"; };
+		C389B56CCC31AE86CB951AF4 /* Pods-RainForestStarter.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RainForestStarter.release.xcconfig"; path = "Pods/Target Support Files/Pods-RainForestStarter/Pods-RainForestStarter.release.xcconfig"; sourceTree = "<group>"; };
+		ECE29CDFAB0B58DDE8D853D2 /* Pods-RainForestStarter.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RainForestStarter.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RainForestStarter/Pods-RainForestStarter.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,20 +60,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				91F8487F51508425FCE7F8C0 /* libPods-RainForestFinal.a in Frameworks */,
+				13A210D61D5A4363BAE7ED3F /* libPods-RainForestStarter.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		83FE17C6D4EC85343274480B /* Pods */ = {
+		314666EBD13C8F28B927FD1B /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				79C731D5DCD29A2373C5D3A3 /* Pods-RainForestFinal.debug.xcconfig */,
-				4E68A3A3C420DC6B19D02192 /* Pods-RainForestFinal.release.xcconfig */,
+				ECE29CDFAB0B58DDE8D853D2 /* Pods-RainForestStarter.debug.xcconfig */,
+				C389B56CCC31AE86CB951AF4 /* Pods-RainForestStarter.release.xcconfig */,
 			);
 			name = Pods;
+			sourceTree = "<group>";
+		};
+		73C727867EE58DC2E3A924B2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				868B159D652C0E04F8059D12 /* libPods-RainForestStarter.a */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		9FF736D11D5376DA009B70D9 /* Source */ = {
@@ -89,6 +100,8 @@
 				9FF736E01D5376DA009B70D9 /* RainforestCardInfo.m */,
 				9FF736E11D5376DA009B70D9 /* UIImage+ImageEffects.h */,
 				9FF736E21D5376DA009B70D9 /* UIImage+ImageEffects.m */,
+				AECCF9911E1459CE003C07F8 /* ASImageNode+Placeholder.h */,
+				AECCF9921E1459CE003C07F8 /* ASImageNode+Placeholder.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -115,9 +128,9 @@
 				9FF736D11D5376DA009B70D9 /* Source */,
 				9FF736EF1D5376E3009B70D9 /* Resources */,
 				AE2FB48B1C821D0C003AD243 /* Products */,
-				83FE17C6D4EC85343274480B /* Pods */,
-				BC9ACDA6D94C34A56AC7E40E /* Frameworks */,
 				9FF736F41D53770B009B70D9 /* Info.plist */,
+				314666EBD13C8F28B927FD1B /* Pods */,
+				73C727867EE58DC2E3A924B2 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -129,14 +142,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		BC9ACDA6D94C34A56AC7E40E /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				63AFCB603422C3729A0BEAF1 /* libPods-RainForestFinal.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -144,12 +149,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AE2FB4A11C821D0C003AD243 /* Build configuration list for PBXNativeTarget "RainForestStarter" */;
 			buildPhases = (
-				4ED666631473AC01124F00E5 /* Check Pods Manifest.lock */,
+				731FACD2E6E1D0241FC08DD5 /* [CP] Check Pods Manifest.lock */,
 				AE2FB4861C821D0C003AD243 /* Sources */,
 				AE2FB4871C821D0C003AD243 /* Frameworks */,
 				AE2FB4881C821D0C003AD243 /* Resources */,
-				3C83C11706E45F7848328445 /* Embed Pods Frameworks */,
-				B4AACF54261F19814AF533E2 /* Copy Pods Resources */,
+				ADC0A28B8F66AF1663E3F8B2 /* [CP] Embed Pods Frameworks */,
+				040C51ADD4AF19CE00659E5C /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -171,6 +176,7 @@
 				TargetAttributes = {
 					AE2FB4891C821D0C003AD243 = {
 						CreatedOnToolsVersion = 7.2.1;
+						DevelopmentTeam = 4JMCFRDF6S;
 					};
 				};
 			};
@@ -204,29 +210,29 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3C83C11706E45F7848328445 /* Embed Pods Frameworks */ = {
+		040C51ADD4AF19CE00659E5C /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Embed Pods Frameworks";
+			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RainForestFinal/Pods-RainForestFinal-frameworks.sh\"\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RainForestStarter/Pods-RainForestStarter-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		4ED666631473AC01124F00E5 /* Check Pods Manifest.lock */ = {
+		731FACD2E6E1D0241FC08DD5 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Pods Manifest.lock";
+			name = "[CP] Check Pods Manifest.lock";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -234,19 +240,19 @@
 			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
-		B4AACF54261F19814AF533E2 /* Copy Pods Resources */ = {
+		ADC0A28B8F66AF1663E3F8B2 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Copy Pods Resources";
+			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RainForestFinal/Pods-RainForestFinal-resources.sh\"\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-RainForestStarter/Pods-RainForestStarter-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -259,6 +265,7 @@
 				9F7D350F1D537A8100E73C90 /* CardNode_InterfaceCallbacks.m in Sources */,
 				9FF736E71D5376DA009B70D9 /* CardCell.m in Sources */,
 				9FF736EA1D5376DA009B70D9 /* GradientNode.m in Sources */,
+				AECCF9931E1459CE003C07F8 /* ASImageNode+Placeholder.m in Sources */,
 				9FF736EC1D5376DA009B70D9 /* RainforestCardInfo.m in Sources */,
 				9FF736E81D5376DA009B70D9 /* CardNode.m in Sources */,
 				9FF736EE1D5376DA009B70D9 /* AnimalPagerController.m in Sources */,
@@ -355,24 +362,28 @@
 		};
 		AE2FB4A21C821D0C003AD243 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 79C731D5DCD29A2373C5D3A3 /* Pods-RainForestFinal.debug.xcconfig */;
+			baseConfigurationReference = ECE29CDFAB0B58DDE8D853D2 /* Pods-RainForestStarter.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 4JMCFRDF6S;
 				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.razeware.RainforestStarter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trifectah.asdkraywenderlich;
 				PRODUCT_NAME = RainforestStarter;
 			};
 			name = Debug;
 		};
 		AE2FB4A31C821D0C003AD243 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4E68A3A3C420DC6B19D02192 /* Pods-RainForestFinal.release.xcconfig */;
+			baseConfigurationReference = C389B56CCC31AE86CB951AF4 /* Pods-RainForestStarter.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 4JMCFRDF6S;
 				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.razeware.RainforestStarter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.trifectah.asdkraywenderlich;
 				PRODUCT_NAME = RainforestStarter;
 			};
 			name = Release;

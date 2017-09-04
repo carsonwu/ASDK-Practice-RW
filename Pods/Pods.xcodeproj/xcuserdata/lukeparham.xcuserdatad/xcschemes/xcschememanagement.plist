@@ -24,7 +24,7 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>Pods-RainForestFinal.xcscheme</key>
+		<key>Pods-RainForestStarter.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -32,7 +32,7 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>080E205B5370AE0C927ADB8113C72587</key>
+		<key>2D607238FFC7C463B431DDEA750DCB2C</key>
 		<dict>
 			<key>primary</key>
 			<true/>
@@ -42,22 +42,17 @@
 			<key>primary</key>
 			<true/>
 		</dict>
-		<key>693E73207E1BD5E072DE743BC32BDEE4</key>
+		<key>48145AFBADD069C22D823DB5F2B5D9F4</key>
 		<dict>
 			<key>primary</key>
 			<true/>
 		</dict>
-		<key>73497F8DBCE409246B490ED9791F5516</key>
+		<key>61102C497C75F9EC025B73A778A9779E</key>
 		<dict>
 			<key>primary</key>
 			<true/>
 		</dict>
-		<key>C319CA98BAE253D66C0B5E21CD364F56</key>
-		<dict>
-			<key>primary</key>
-			<true/>
-		</dict>
-		<key>C61110BBBE92A7591A791A66B8A040AE</key>
+		<key>8D7EDAADEB1177AC57CB4C8E28D983F6</key>
 		<dict>
 			<key>primary</key>
 			<true/>
