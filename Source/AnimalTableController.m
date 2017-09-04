@@ -24,7 +24,7 @@
 #import "RainforestCardInfo.h"
 //#import "CardNode.h"
 #import "CardCell.h"
-#import <AsyncDisplayKit/AsyncDisplayKit.h>
+//#import <AsyncDisplayKit/AsyncDisplayKit.h>
 
 static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
@@ -52,7 +52,7 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
   _animals = animals.mutableCopy;
   if (!(self = [super init])) { return nil; }
-    ASTableNode
+    
   return self;
 }
 
