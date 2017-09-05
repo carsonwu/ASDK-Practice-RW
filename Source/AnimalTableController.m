@@ -57,6 +57,7 @@
 - (void)viewDidLoad {
   [super viewDidLoad];
     [self.view addSubnode:self.tableNode];
+    [self.tableNode.view setLeadingScreensForBatching:1.0];
   [self applyStyle];
 }
 
@@ -130,31 +131,51 @@
     return ASSizeRangeMake(min, max);
 }
 
+- (BOOL)shouldBatchFetchForTableNode:(ASTableNode *)tableNode{
+    return YES;
+}
+
+
+/*
+ Note: This method will always be called on a background thread. This means, if you need to do any work on the main thread, you should dispatch it to the main thread and then proceed with the work needed in order to finish the batch fetch operation.
+ */
+- (void)tableView:(ASTableView *)tableView willBeginBatchFetchWithContext:(ASBatchContext *)context{
+    [self retrieveNextPageWithCompletion:^(NSArray *animals) {
+        [self insertNewRowsInTableNode:animals];
+        [context completeBatchFetching:YES];
+    }];
+}
+
 @end
 
 @implementation AnimalTableController (Helpers)
 
 - (void)retrieveNextPageWithCompletion:(void (^)(NSArray *))block {
-//  NSArray *moreAnimals = [[NSArray alloc] initWithArray:[self.animals subarrayWithRange:NSMakeRange(0, 5)] copyItems:NO];
-//  
-//  // Important: this block must run on the main thread
-//  dispatch_async(dispatch_get_main_queue(), ^{
-//    block(moreAnimals);
-//  });
+  NSArray *moreAnimals = [[NSArray alloc] initWithArray:[self.animals subarrayWithRange:NSMakeRange(0, 5)] copyItems:NO];
+  
+  // Important: this block must run on the main thread
+  dispatch_async(dispatch_get_main_queue(), ^{
+    block(moreAnimals);
+  });
 }
 
 - (void)insertNewRowsInTableNode:(NSArray *)newAnimals {
-//  NSInteger section = 0;
-//  NSMutableArray *indexPaths = [NSMutableArray array];
-//  
-//  NSUInteger newTotalNumberOfPhotos = self.animals.count + newAnimals.count;
-//  for (NSUInteger row = self.animals.count; row < newTotalNumberOfPhotos; row++) {
-//    NSIndexPath *path = [NSIndexPath indexPathForRow:row inSection:section];
-//    [indexPaths addObject:path];
-//  }
-//  
-//  [self.animals addObjectsFromArray:newAnimals];
-//  [self.tableNode insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationNone];
+  NSInteger section = 0;
+  NSMutableArray *indexPaths = [NSMutableArray array];
+  
+  NSUInteger newTotalNumberOfPhotos = self.animals.count + newAnimals.count;
+  for (NSUInteger row = self.animals.count; row < newTotalNumberOfPhotos; row++) {
+    NSIndexPath *path = [NSIndexPath indexPathForRow:row inSection:section];
+    [indexPaths addObject:path];
+  }
+  
+  [self.animals addObjectsFromArray:newAnimals];
+    
+    /*
+     This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
+     before this method is called.
+     */
+  [self.tableNode insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationNone];
 }
 
 @end
