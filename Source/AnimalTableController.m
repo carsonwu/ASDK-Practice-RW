@@ -34,7 +34,7 @@
 @interface AnimalTableController (DataSource)<ASTableDataSource>
 @end
 
-@interface AnimalTableController (Delegate)<UITableViewDelegate>
+@interface AnimalTableController (Delegate)<ASTableDelegate>
 @end
 
 @interface AnimalTableController (Helpers)
@@ -119,8 +119,15 @@
 
 @implementation AnimalTableController (Delegate)
 
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-  return self.view.bounds.size.height;
+//- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+//  return self.view.bounds.size.height;
+//}
+
+- (ASSizeRange)tableNode:(ASTableNode *)tableNode constrainedSizeForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CGFloat width = CGRectGetWidth([UIScreen mainScreen].bounds);
+    CGSize min = CGSizeMake(width, CGRectGetHeight([UIScreen mainScreen].bounds) * 2 / 3);
+    CGSize max = CGSizeMake(width, INFINITY);
+    return ASSizeRangeMake(min, max);
 }
 
 @end
