@@ -22,18 +22,16 @@
 
 #import "AnimalTableController.h"
 #import "RainforestCardInfo.h"
-//#import "CardNode.h"
+#import "CardNode.h"
 #import "CardCell.h"
-//#import <AsyncDisplayKit/AsyncDisplayKit.h>
-
-static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
+#import <AsyncDisplayKit/AsyncDisplayKit.h>
 
 @interface AnimalTableController ()
-@property (strong, nonatomic) UITableView *tableView;
+@property (strong, nonatomic) ASTableNode *tableNode;
 @property (strong, nonatomic) NSMutableArray<RainforestCardInfo *> *animals;
 @end
 
-@interface AnimalTableController (DataSource)<UITableViewDataSource>
+@interface AnimalTableController (DataSource)<ASTableDataSource>
 @end
 
 @interface AnimalTableController (Delegate)<UITableViewDelegate>
@@ -49,43 +47,36 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 #pragma mark - Lifecycle
 
 - (instancetype)initWithAnimals:(NSArray<RainforestCardInfo *> *)animals {
-
+    self.tableNode = [[ASTableNode alloc] initWithStyle:UITableViewStylePlain];
   _animals = animals.mutableCopy;
   if (!(self = [super init])) { return nil; }
-    
+    [self wireDelegation];
   return self;
 }
 
 - (void)viewDidLoad {
   [super viewDidLoad];
-
-  self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-  [self.tableView registerClass:[CardCell class] forCellReuseIdentifier:kCellReuseIdentifier];
-
-  [self wireDelegation];
+    [self.view addSubnode:self.tableNode];
   [self applyStyle];
-
-  [self.view addSubview:self.tableView];
 }
 
 - (void)viewWillLayoutSubviews {
   [super viewWillLayoutSubviews];
-
-  self.tableView.frame = self.view.bounds;
+    self.tableNode.frame = self.view.bounds;
 }
 
 #pragma mark - Delegation
 
 - (void)wireDelegation {
-  self.tableView.dataSource = self;
-  self.tableView.delegate = self;
+  self.tableNode.dataSource = self;
+  self.tableNode.delegate = self;
 }
 
 #pragma mark - Appearance
 
 - (void)applyStyle {
   self.view.backgroundColor = [UIColor blackColor];
-  self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+  self.tableNode.view.separatorStyle = UITableViewCellSeparatorStyleNone;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -97,17 +88,30 @@ static NSString *kCellReuseIdentifier = @"CellReuseIdentifier";
 
 @implementation AnimalTableController (DataSource)
 
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-  return self.animals.count;
+//- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+//  return self.animals.count;
+//}
+//
+//- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+//  CardCell *cell = [self.tableView dequeueReusableCellWithIdentifier:kCellReuseIdentifier];
+//
+//  cell.backgroundColor = [UIColor lightGrayColor];
+//  cell.animalInfo = self.animals[indexPath.row];
+//
+//  return cell;
+//}
+
+- (NSInteger)tableNode:(ASTableNode *)tableNode numberOfRowsInSection:(NSInteger)section{
+    return self.animals.count;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-  CardCell *cell = [self.tableView dequeueReusableCellWithIdentifier:kCellReuseIdentifier];
-
-  cell.backgroundColor = [UIColor lightGrayColor];
-  cell.animalInfo = self.animals[indexPath.row];
-
-  return cell;
+- (ASCellNodeBlock)tableNode:(ASTableNode *)tableNode nodeBlockForRowAtIndexPath:(nonnull NSIndexPath *)indexPath{
+    RainforestCardInfo *animal = self.animals[indexPath.row];
+    
+    return ^{
+        CardNode *cardNode = [[CardNode alloc] initWithAnimal:animal];
+        return cardNode;
+    };
 }
 
 @end
