@@ -49,6 +49,8 @@
 
   // Create and configure ASPagerNode instance here:
 
+    self.pagerNode = [[ASPagerNode alloc] init];
+    self.pagerNode.dataSource = self;
   _pagerNode.backgroundColor = [UIColor blackColor];
 
   return self;
@@ -77,7 +79,25 @@
 @implementation AnimalPagerController (ASPagerDataSource)
 
 - (NSInteger)numberOfPagesInPagerNode:(ASPagerNode *)pagerNode {
-  return 0;
+  return self.animals.count;
+}
+
+- (ASCellNodeBlock)pagerNode:(ASPagerNode *)pagerNode nodeBlockAtIndex:(NSInteger)index{
+    NSArray *animals = self.animals[index];
+    CGSize pagerNodeSize = self.pagerNode.bounds.size;
+    
+    // this part can be executed on a background thread - it is important to make sure it is thread safe!
+    ASCellNode *(^cellNodeBlock)() = ^ASCellNode *() {
+        ASCellNode *cellNode = [[ASCellNode alloc] initWithViewControllerBlock:^UIViewController * _Nonnull{
+            return [[AnimalTableController alloc] initWithAnimals:animals];
+        } didLoadBlock:nil];
+        cellNode.style.preferredSize = pagerNodeSize;
+        cellNode.debugName = [NSString stringWithFormat:@"Load cell %zd", index];
+        NSLog(@"%@", cellNode.debugName);
+        return cellNode;
+    };
+    
+    return cellNodeBlock;
 }
 
 @end

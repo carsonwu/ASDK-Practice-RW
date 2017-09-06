@@ -39,7 +39,8 @@
 }
 
 - (void)installRootViewController {
-  AnimalTableController *vc = [[AnimalTableController alloc] initWithAnimals:[RainforestCardInfo allAnimals]];
+//  AnimalTableController *vc = [[AnimalTableController alloc] initWithAnimals:[RainforestCardInfo allAnimals]];
+    AnimalPagerController *vc = [[AnimalPagerController alloc] init];
   self.window.rootViewController = vc;
 }
 
