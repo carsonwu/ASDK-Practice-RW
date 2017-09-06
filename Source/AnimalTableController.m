@@ -111,6 +111,7 @@
     
     return ^{
         CardNode *cardNode = [[CardNode alloc] initWithAnimal:animal];
+        cardNode.debugName = [NSString stringWithFormat:@"Cell %zd", indexPath.row];
         return cardNode;
     };
 }
