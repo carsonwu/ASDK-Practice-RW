@@ -87,8 +87,8 @@
         UIImage *newImage = [[UIImage resizeImage:image newSize:CGSizeMake(100, 300)] applyBlurWithRadius:10.0 tintColor:tintColor saturationDeltaFactor:1.8 maskImage:nil];
         return newImage;
     };
-    _backgroundImageNode.placeholderEnabled = YES;
-    _backgroundImageNode.placeholderFadeDuration = 0.15;
+//    _backgroundImageNode.placeholderEnabled = YES;
+//    _backgroundImageNode.placeholderFadeDuration = 0.15;
     
     //Gradient Node
     _gradientNode.layerBacked = YES;
@@ -107,6 +107,7 @@
 #pragma mark - Node Layout
 
 - (ASLayoutSpec *)layoutSpecThatFits:(ASSizeRange)constrainedSize {
+    /*
     CGFloat ratio = (constrainedSize.min.height)/constrainedSize.max.width;
     
     ASRatioLayoutSpec *imageRatioSpec = [ASRatioLayoutSpec
@@ -136,6 +137,47 @@
     ASStackLayoutSpec *verticalStackSpec = [[ASStackLayoutSpec alloc] init];
     verticalStackSpec.direction = ASStackLayoutDirectionVertical;
     verticalStackSpec.children = @[nameOverlaySpec, descriptionTextInsetSpec];
+    
+    ASBackgroundLayoutSpec *backgroundLayoutSpec = [ASBackgroundLayoutSpec
+                                                    backgroundLayoutSpecWithChild:verticalStackSpec
+                                                    background:self.backgroundImageNode];
+    
+    return backgroundLayoutSpec;
+     */
+    
+    CGFloat imageRatio = constrainedSize.min.height / constrainedSize.min.width;
+    ASRatioLayoutSpec *imageRatioSpec = [ASRatioLayoutSpec
+                                         ratioLayoutSpecWithRatio:imageRatio
+                                         child:self.animalImageNode];
+    
+    ASOverlayLayoutSpec *gradientOverlaySpec = [ASOverlayLayoutSpec
+                                                overlayLayoutSpecWithChild:imageRatioSpec
+                                                overlay:self.gradientNode];
+    
+    ASRelativeLayoutSpec *relativeSpec = [ASRelativeLayoutSpec
+                                          relativePositionLayoutSpecWithHorizontalPosition:ASRelativeLayoutSpecPositionStart
+                                          verticalPosition:ASRelativeLayoutSpecPositionEnd
+                                          sizingOption:ASRelativeLayoutSpecSizingOptionDefault
+                                          child:self.animalNameTextNode];
+    
+    ASInsetLayoutSpec *nameInsetSpec = [ASInsetLayoutSpec
+                                        insetLayoutSpecWithInsets:UIEdgeInsetsMake(0, 16, 8, 0)
+                                        child:relativeSpec];
+    
+    ASOverlayLayoutSpec *nameOverlaySpec = [ASOverlayLayoutSpec
+                                            overlayLayoutSpecWithChild:gradientOverlaySpec
+                                            overlay:nameInsetSpec];
+    
+    ASInsetLayoutSpec *descriptionTextInsetSpec = [ASInsetLayoutSpec
+                                                   insetLayoutSpecWithInsets:UIEdgeInsetsMake(16, 28, 12, 28)
+                                                   child:self.animalDescriptionTextNode];
+    
+    ASStackLayoutSpec *verticalStackSpec = [ASStackLayoutSpec
+                                            stackLayoutSpecWithDirection:ASStackLayoutDirectionVertical
+                                            spacing:0
+                                            justifyContent:ASStackLayoutJustifyContentStart
+                                            alignItems:ASStackLayoutAlignItemsStart
+                                            children:@[nameOverlaySpec, descriptionTextInsetSpec]];
     
     ASBackgroundLayoutSpec *backgroundLayoutSpec = [ASBackgroundLayoutSpec
                                                     backgroundLayoutSpecWithChild:verticalStackSpec
