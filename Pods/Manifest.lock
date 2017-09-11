@@ -20,48 +20,39 @@ PODS:
   - AFNetworking/UIKit (2.6.3):
     - AFNetworking/NSURLConnection
     - AFNetworking/NSURLSession
-  - AsyncDisplayKit (2.0-beta.1):
-    - AsyncDisplayKit/PINRemoteImage (= 2.0-beta.1)
-  - AsyncDisplayKit/ASDealloc2MainObject (2.0-beta.1)
-  - AsyncDisplayKit/Core (2.0-beta.1):
-    - AsyncDisplayKit/ASDealloc2MainObject
-  - AsyncDisplayKit/PINRemoteImage (2.0-beta.1):
+  - AsyncDisplayKit (2.2.1):
+    - AsyncDisplayKit/PINRemoteImage (= 2.2.1)
+  - AsyncDisplayKit/Core (2.2.1)
+  - AsyncDisplayKit/PINRemoteImage (2.2.1):
     - AsyncDisplayKit/Core
-    - PINRemoteImage/iOS (= 3.0.0-beta.6)
+    - PINRemoteImage/iOS (= 3.0.0-beta.8)
     - PINRemoteImage/PINCache
-  - PINCache (3.0.1-beta.2):
-    - PINCache/Arc-exception-safe (= 3.0.1-beta.2)
-    - PINCache/Core (= 3.0.1-beta.2)
-  - PINCache/Arc-exception-safe (3.0.1-beta.2):
+  - PINCache (3.0.1-beta.4):
+    - PINCache/Arc-exception-safe (= 3.0.1-beta.4)
+    - PINCache/Core (= 3.0.1-beta.4)
+  - PINCache/Arc-exception-safe (3.0.1-beta.4):
     - PINCache/Core
-  - PINCache/Core (3.0.1-beta.2)
-  - PINRemoteImage/Core (3.0.0-beta.6)
-  - PINRemoteImage/iOS (3.0.0-beta.6):
+  - PINCache/Core (3.0.1-beta.4):
+    - PINOperation (= 1.0.3)
+  - PINOperation (1.0.3)
+  - PINRemoteImage/Core (3.0.0-beta.8)
+  - PINRemoteImage/iOS (3.0.0-beta.8):
     - PINRemoteImage/Core
-  - PINRemoteImage/PINCache (3.0.0-beta.6):
-    - PINCache (= 3.0.1-beta.2)
+  - PINRemoteImage/PINCache (3.0.0-beta.8):
+    - PINCache (= 3.0.1-beta.4)
     - PINRemoteImage/Core
 
 DEPENDENCIES:
   - AFNetworking (~> 2.0)
-  - AsyncDisplayKit (from `git@github.com:facebook/AsyncDisplayKit.git`, tag `2.0-beta.1`)
-
-EXTERNAL SOURCES:
-  AsyncDisplayKit:
-    :git: git@github.com:facebook/AsyncDisplayKit.git
-    :tag: 2.0-beta.1
-
-CHECKOUT OPTIONS:
-  AsyncDisplayKit:
-    :git: git@github.com:facebook/AsyncDisplayKit.git
-    :tag: 2.0-beta.1
+  - AsyncDisplayKit
 
 SPEC CHECKSUMS:
   AFNetworking: cb8d14a848e831097108418f5d49217339d4eb60
-  AsyncDisplayKit: 4d4403eb61b2b667866e98ca8b7fab6cec497b68
-  PINCache: 6d273a6e0754bd26e3f12a38a90dde73cc6a42b2
-  PINRemoteImage: 60156f185c9360ca4e93832cd490d6f6c7afbd9a
+  AsyncDisplayKit: 2234dd8d8770a5ed72936b3f8394bd5a807765f6
+  PINCache: a89c8f609232afac77128557bd12c861844423d7
+  PINOperation: ac23db44796d4a564ecf9b5ea7163510f579b71d
+  PINRemoteImage: c4f9f16932840c597f32e69dd288e10e111a1929
 
-PODFILE CHECKSUM: 4383d843f3764e24a46ad9abae57515288b4b2a6
+PODFILE CHECKSUM: ac7aa8120d17c9ef46a21faeadebb17fcd8df57d
 
-COCOAPODS: 1.0.1
+COCOAPODS: 1.2.1

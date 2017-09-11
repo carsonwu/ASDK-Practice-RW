@@ -5,6 +5,6 @@
 
 target 'RainForestStarter' do
   pod "AFNetworking", "~> 2.0" # Used for UITableView starter project, final project only depends on AsyncDisplayKit.
-  pod "AsyncDisplayKit", git: "git@github.com:facebook/AsyncDisplayKit.git", tag: "2.0-beta.1"
+  pod "AsyncDisplayKit"
 end
 
